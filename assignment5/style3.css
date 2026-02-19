@@ -1,0 +1,69 @@
+h1 {
+    font-family: Helvetica, Arial, sans-serif;
+    font-weight: normal;
+}
+
+.whitebg {
+    background-color: white;
+    border: 10px solid white;
+}
+
+body {
+    background-image: url(a5bg.png);
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: cover;
+}
+.Whitebg {
+    background-color: white;
+    border: 1px solid white;
+    border-collapse: separate;
+}
+
+.bluenwhitebg {
+    color: white;
+    background-color: darkblue;
+    border: 1px solid white;
+    text-align: center;
+    font-family: Verdana, sans-serif;
+    font-weight: bold;
+    font-style: italic;
+    padding: 10x;
+}
+
+
+h2 {
+    font-weight: bold;
+    font-family: Helvetica, Arial, sans-serif;
+    background-color: white;
+    border-bottom: 5px solid black; 
+}
+
+nav li {
+    display: inline-block;
+    border: 1px solid black;
+    width: 200px;
+    padding: 1px;
+    margin-right: 1px;
+    background-color: darkblue;
+}
+
+nav li a {
+    display: block;
+    padding: 20px;
+    color: white;
+    text-decoration: none;
+}
+nav li a:hover {
+    background-color: blue;
+}
+a {
+    color: blue;
+    font-weight: bold;
+    text-decoration: none;
+}
+a.red-underline:hover {
+    color: red;
+    font-weight: bold;
+    text-decoration: underline;
+}
