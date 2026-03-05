@@ -1,0 +1,178 @@
+#wrapper {
+  margin: 1em auto;
+  padding: 0xp;
+  width: 1200px;
+  border: 3px solid darkblue;
+  background-color: #ffffff; 
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+}
+#wrapper-2 {
+  margin: 1em auto;
+  padding: 0xp;
+  width: 1200px;
+  height: 900px;
+  background-color: #ffffff;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  margin: 0px 0px 0px 0px;
+}
+h1 a{
+    font-family: Helvetica, Arial, sans-serif;
+    font-weight: normal;
+    text-decoration: none;
+    color: lightskyblue;
+    margin: 0px 0px 0px 40px;
+}
+h1 a:hover{
+    color: white;
+}
+.lightnbluebg {
+    color: lightskyblue;
+    background-image: linear-gradient(rgb(44, 85, 190), blue);
+    width: 1200px;
+    height: 130px;
+    grid-column: span 12;
+}
+body {
+    background-color: grey;
+}
+nav {
+  grid-column: span 12;
+}
+nav ul {
+    padding: 0;
+    margin: 0;
+}
+nav li {
+    display: inline-block;
+    width: 295px;
+    background-image: linear-gradient(rgb(44, 85, 190), blue);
+    list-style-type: none; 
+    height: 50px;
+    margin: 0px 2px 0px 0px;
+}
+nav li a {
+    display: block;
+    padding: 10px;
+    font-size: 20px;
+    padding-left: 25px;
+    color: lightskyblue;
+    text-decoration: none;
+    float: left;
+    bottom: 0;
+    font-weight: bold;
+    margin: 0px 30px 30px 60px;
+}
+nav li a:hover {
+    color: white;
+    width: 295px;
+    display: inline-block;
+    margin: 0px 30px 30px 60px;
+}
+.cyanbg {
+    background-color: lightblue;
+    grid-column: span 4;
+}
+.whitebg {
+    background-color: white;
+    border: 1px solid white;
+    border-collapse: separate;
+    grid-column: span 8;
+    border-bottom: 3px darkblue;
+}
+.doctorimage {
+    border: 3px solid darkblue;
+    float: left;
+    margin-right: 15px; 
+    margin-bottom: 15px; 
+    width: 400px; 
+    height: auto;
+    margin: 0px 15px 15px 15px;
+}
+h2 {
+    color: blue;
+    text-align: left;
+    border-bottom: 2px solid blue;
+    padding-bottom: 5px;  
+    margin: 0px 15px 15px 15px;
+}
+.element-with-background {
+  background-position: 20px 30px;
+  background-size: 50px;
+}
+.bold {
+    font-weight: bold;
+    text-align: justify;
+    margin: 0px 10px 0px 10px;
+}
+.whitebg-2 {
+    background-color: white;
+    border: 1px solid white;
+    border-collapse: separate;
+    grid-column: span 8;
+    margin: 0px 0px 15px 15px;
+}
+.cyanbg-2{
+    background-color: lightblue;
+    grid-column: span 4;
+}
+.doctorimage-2{
+    border: 3px solid darkblue;
+    float: right;
+    margin-right: 15px; 
+    margin-bottom: 15px; 
+    width: 400px; 
+    height: auto;
+    margin: 0px 15px 15px 15px;
+}
+.left {
+    float: right;
+    font-family: "Georgia", serif;
+    text-align: justify;
+}
+.bold-2{
+    font-weight: bold;
+    text-align: justify;
+    margin: 45px 10px 0px 10px;
+}
+.whitebg-3-1 {
+    background-color: white;
+    border: 1px solid white;
+    border-collapse: separate;
+    grid-column: span 1;
+    margin: 0px 15px 15px 15px;
+}
+.whitebg-3-2 {
+    background-color: white;
+    border: 1px solid white;
+    border-collapse: separate;
+    grid-column: span 1;
+    margin: 0px 15px 15px 15px;
+}
+.whitebg-3-3 {
+    background-color: white;
+    border: 1px solid white;
+    border-collapse: separate;
+    grid-column: span 1;
+    margin: 0px 15px 15px 15px;
+}
+.logo {
+    background-color: red;
+    grid-column: span 12;
+    border-top: 3px darkblue;
+}
+.doctorimage-3-1 {
+    margin: 0px 15px 15px 15px;
+}
+.doctorimage-3-2 {
+    margin: 0px 15px 15px 15px;
+}
+.doctorimage-3-3 {
+    margin: 0px 15px 15px 15px;
+}
+a.red {
+    color: red;
+    text-decoration: none;
+}
