@@ -41,6 +41,8 @@ body {
   width: 400px; 
   height: auto;
   margin: 10px 0px 0px 0px;
+  border-radius: 15px;
+  box-shadow: 10px 10px red;
 }
 
 .info {
@@ -50,6 +52,9 @@ body {
     height: auto;
     grid-column: span 4;
     margin: 10px 0px 0px 10px;
+    font-family: "Sekuya", system-ui;
+    text-align: center;
+    box-shadow: 10px 10px red;
 }
 
 nav {
@@ -67,6 +72,7 @@ nav li {
     list-style-type: none; 
     height: 130px;
     margin: 0px 20px 0px 0px;
+    box-shadow: 10px 10px red;
 }
 nav li a {
     display: block;
@@ -86,14 +92,16 @@ nav li a:hover {
     display: inline-block;
     margin: 50px 30px 30px 60px;
 }
-.artexamples {
+footer {
     color: white;
     background-image: linear-gradient(darkred , red);
     width: 1200px;
     height: auto;
     grid-column: span 12;
     text-align: center;
-    padding: 0px 0px 50px 10px;
+    border-collapse: separate;
+    padding: 10px 0px 10px 0px;
+    font-family: "Sekuya", system-ui;
 }
 .image-1 {
     grid-column: span 4;
@@ -116,4 +124,14 @@ nav li a:hover {
   width: 358px; 
   height: auto;
   margin: 10px 0px 0px 0px;
+  box-shadow: 10px 10px red;
+  border-radius: 15px;
+}
+.video {
+    color: white;
+    background-image: linear-gradient(red , darkred);
+    width: 1200px;
+    grid-column: span 12;
+    text-align: center;
+    padding: 10px 0px 10px 0px;
 }
