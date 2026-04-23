@@ -102,6 +102,7 @@ footer {
     border-collapse: separate;
     padding: 10px 0px 10px 0px;
     font-family: "Sekuya", system-ui;
+    margin: 10px 0px 10px 0px;
 }
 .image-1 {
     grid-column: span 4;
@@ -127,11 +128,14 @@ footer {
   box-shadow: 10px 10px red;
   border-radius: 15px;
 }
-.video {
+.div {
     color: white;
     background-image: linear-gradient(red , darkred);
     width: 1200px;
     grid-column: span 12;
     text-align: center;
     padding: 10px 0px 10px 0px;
+}
+.gallery {
+    width: 250px;
 }
