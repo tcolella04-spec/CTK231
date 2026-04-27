@@ -104,6 +104,18 @@ footer {
     font-family: "Sekuya", system-ui;
     margin: 10px 0px 10px 0px;
 }
+.footer1 {
+    color: white;
+    background-image: linear-gradient(darkred , red);
+    width: 1200px;
+    height: auto;
+    grid-column: span 12;
+    text-align: center;
+    border-collapse: separate;
+    padding: 10px 0px 10px 0px;
+    font-family: "Sekuya", system-ui;
+    margin: 10px 0px 10px 0px;
+}
 .image-1 {
     grid-column: span 4;
     border-bottom: 3px darkblue;
@@ -138,4 +150,12 @@ footer {
 }
 .gallery {
     width: 250px;
+}
+.collum {
+    color: white;
+    background-image: linear-gradient(red , darkred);
+    width: 1200px;
+    grid-column: span 12;
+    text-align: center;
+    padding: 0px 0px 0px 0px;
 }
