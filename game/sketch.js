@@ -1,42 +1,37 @@
+var alpha = 0, beta = 35, gamma = 0;
+let xPosition = 0, yPosition = 0;
 
-var beta = 0, gamma = 0;
-var xPosition = 0, yPosition = 0;
-
-let bladeImg, mowerImg, bgImg, enemyImg;
 let introVid, winVid, loseVid;
 let blades = [];
 let mowerPos;
 let chaser;
 
-let state = 0; // 0 = Intro, 1 = Gameplay, 2 = Survived (Win Video), 3 = Lose
+let state = 0;
 let permissionGranted = false;
-
-let survivalGoal = 15; // Seconds needed to survive
+let survivalGoal = 15;
 let startTime = 0;
 
-async function setup() {
+function setup() {
   createCanvas(windowWidth, windowHeight);
   mowerPos = createVector(width / 2, height - 80);
 
-  // Load images (replace "enemy.png" with your own enemy sprite filename)
-  bladeImg = await loadImage("blade.png");
-  mowerImg = await loadImage("mower.png");
-  bgImg = await loadImage("grass.jpeg");
-  enemyImg = await loadImage("enemy.png");
-
-  // Load videos and hide HTML players
-  introVid = createVideo("intro.mov");
+  // Load videos (use .mp4 for best mobile compatibility) and configure inline playback
+  introVid = createVideo("intro.mp4");
+  introVid.attribute("playsinline", "");
+  introVid.volume(0); // Muted allows reliable mobile autoplay
+  introVid.loop();
   introVid.hide();
 
-  winVid = createVideo("win.mov");
+  winVid = createVideo("win.mp4");
+  winVid.attribute("playsinline", "");
   winVid.hide();
 
-  loseVid = createVideo("lose.mov");
+  loseVid = createVideo("lose.mp4");
+  loseVid.attribute("playsinline", "");
   loseVid.hide();
 
   resetRound();
 
-  imageMode(CENTER);
   rectMode(CENTER);
   noStroke();
 
@@ -64,19 +59,21 @@ function draw() {
       break;
 
     case 1: // MAIN GAMEPLAY (DODGE & OUTRUN)
-      if (bgImg) {
-        image(bgImg, width / 2, height / 2, width, height);
-      }
+      // Solid grass-green background placeholder
+      background(55, 140, 65);
 
       // Calculate remaining time
       let elapsedSeconds = (millis() - startTime) / 1000;
       let timeLeft = max(0, survivalGoal - elapsedSeconds);
 
-      // Move player via tilt
+      // Move player via tilt (with desktop arrow-key fallback for testing)
+      handleDesktopFallback();
       xPosition = map(gamma, -18, 18, 0, width, true);
       yPosition = map(beta, 25, 45, 0, height, true);
 
-      image(mowerImg, xPosition, yPosition, 100, 100);
+      // Draw Player (blue circle)
+      fill(40, 140, 255);
+      ellipse(xPosition, yPosition, 70, 70);
       mowerPos.set(xPosition, yPosition);
 
       // Update and check Enemy Chaser
@@ -163,22 +160,33 @@ function touchStarted() {
     startTime = millis();
     state = 1;
   }
+
+  return false; // Prevents mobile scrolling/zooming and double-tap events
 }
 
 function resetRound() {
+  mowerPos.set(width / 2, height - 80);
+
   blades = [];
   for (let i = 0; i < 15; i++) {
     blades.push(new Blade());
   }
-  chaser = new Enemy(width / 2, 80, 2.5); // Spawns at top center with speed 2.5
+  chaser = new Enemy(width / 2, 80, 2.5);
 }
 
 function startMotionListeners() {
   window.addEventListener("deviceorientation", (e) => {
     alpha = e.alpha || 0;
-    beta = e.beta || 0;
+    beta = e.beta || 35;
     gamma = e.gamma || 0;
   });
+}
+
+function handleDesktopFallback() {
+  if (keyIsDown(LEFT_ARROW)) gamma = constrain(gamma - 1, -18, 18);
+  if (keyIsDown(RIGHT_ARROW)) gamma = constrain(gamma + 1, -18, 18);
+  if (keyIsDown(UP_ARROW)) beta = constrain(beta - 0.8, 25, 45);
+  if (keyIsDown(DOWN_ARROW)) beta = constrain(beta + 0.8, 25, 45);
 }
 
 class Enemy {
@@ -188,31 +196,31 @@ class Enemy {
   }
 
   chase(targetPos) {
-    // Calculate vector pointing from enemy toward player
     let dir = p5.Vector.sub(targetPos, this.pos);
     dir.setMag(this.speed);
     this.pos.add(dir);
   }
 
   display() {
-    if (enemyImg) {
-      image(enemyImg, this.pos.x, this.pos.y, 110, 110);
-    } else {
-      // Fallback red circle if enemy.png is not loaded yet
-      fill(220, 40, 40);
-      ellipse(this.pos.x, this.pos.y, 80, 80);
-    }
+    // Draw Enemy Chaser (red circle)
+    fill(220, 40, 40);
+    ellipse(this.pos.x, this.pos.y, 80, 80);
   }
 }
 
 class Blade {
   constructor() {
-    this.pos = createVector(random(width), random(height * 0.6));
+    do {
+      this.pos = createVector(random(width), random(height * 0.6));
+    } while (this.pos.dist(mowerPos) < 180);
+
     this.vel = createVector(random(-5, 5), random(-5, 5));
   }
 
   display() {
-    image(bladeImg, this.pos.x, this.pos.y, 100, 100);
+    // Draw Blade hazard (yellow square)
+    fill(245, 210, 40);
+    rect(this.pos.x, this.pos.y, 50, 50, 8);
   }
 
   drive() {
@@ -223,3 +231,4 @@ class Blade {
     if (this.pos.y < 0) this.pos.y = height;
   }
 }
+
