@@ -1,20 +1,21 @@
-var alpha, beta, gamma;
-var x = 0;
-var y = 0;
-var z = 0;
-var xPosition = 0;
-var yPosition = 0;
+// Gyroscope & Accelerometer variables
+var alpha = 0, beta = 35, gamma = 0;
+var x = 0, y = 0, z = 0;
+var xPosition = 0, yPosition = 0;
+
+// Media & Images
 let introVid, winVid, loseVid;
 let frogImage, flyImage;
+
+// Game entities & state
 let blades = [];
 let mowerPos;
 let chaser;
+
 let state = 0;
 let permissionGranted = false;
 let survivalGoal = 15;
 let startTime = 0;
-var cars = [];
-var frogPos;
 
 function preload() {
   // Load images safely before setup runs (uncomment if files exist in assets/)
@@ -31,7 +32,7 @@ function setup() {
   // Load videos (.mp4 for best mobile compatibility) and configure inline playback
   introVid = createVideo("intro.mp4");
   introVid.attribute("playsinline", "");
-  introVid.volume(0);
+  introVid.volume(0); // Muted allows reliable mobile autoplay
   introVid.loop();
   introVid.hide();
 
@@ -281,3 +282,4 @@ class Blade {
     if (this.pos.y < 0) this.pos.y = height;
   }
 }
+
