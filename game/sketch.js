@@ -1,4 +1,4 @@
-var alpha = 0, beta = 35, gamma = 0;
+var beta = 35, gamma = 0;
 let xPosition = 0, yPosition = 0;
 
 let introVid, winVid, loseVid;
