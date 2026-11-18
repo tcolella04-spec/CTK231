@@ -29,16 +29,16 @@ async function setup() {
   bgImage = await loadImage("grass.jpeg");
 
   // Load Videos (Tries .mp4 first, falls back to .mov automatically)
-  introVid = createVideo(["cutscene.mov"], () => {
+  introVid = createVideo([["cutscene.mp4", "cutscene.mov"], () => {
     setupMobileVideo(introVid);
   });
   introVid.onended(() => switchState(1));
 
-  winVid = createVideo(["win.mov"], () => {
+  winVid = createVideo([["win.mp4", "win.mov"], () => {
     setupMobileVideo(winVid);
   });
 
-  loseVid = createVideo(["lose.mov"], () => {
+  loseVid = createVideo([["lose.mp4", "lose.mov"], () => {
     setupMobileVideo(loseVid);
   });
 
