@@ -15,6 +15,7 @@ let timer = roundDuration;
 let gameStartTime = 0;
 
 let motionEnabled = false;
+let userInteracted = false;
 let lastTapTime = 0;
 let numEnemies = 5; // Number of chasing blades
 
@@ -29,16 +30,17 @@ async function setup() {
   bgImage = await loadImage("grass.jpeg");
 
   // Load Videos (Tries .mp4 first, falls back to .mov automatically)
-  introVid = createVideo([["cutscene.mp4", "cutscene.mov"], () => {
+  introVid = createVideo(["cutscene.mp4", "cutscene.mov"], () => {
     setupMobileVideo(introVid);
+    if (state === 0) safePlay(introVid);
   });
   introVid.onended(() => switchState(1));
 
-  winVid = createVideo([["win.mp4", "win.mov"], () => {
+  winVid = createVideo(["win.mp4", "win.mov"], () => {
     setupMobileVideo(winVid);
   });
 
-  loseVid = createVideo([["lose.mp4", "lose.mov"], () => {
+  loseVid = createVideo(["lose.mp4", "lose.mov"], () => {
     setupMobileVideo(loseVid);
   });
 
@@ -57,10 +59,13 @@ async function setup() {
   rectMode(CENTER);
   textAlign(CENTER, CENTER);
   noStroke();
+
+  // Attempt muted autoplay for intro video
+  safePlay(introVid);
 }
 
 function setupMobileVideo(vid) {
-  if (!vid) return;
+  if (!vid || !vid.elt) return;
   vid.hide();
   vid.attribute("playsinline", "");
   vid.attribute("webkit-playsinline", "");
@@ -81,19 +86,18 @@ function safePlay(vid) {
     vid.elt.currentTime = 0;
   }
 
+  // Mobile browsers require muted autoplay until the user taps the screen
+  vid.elt.muted = !userInteracted;
+
   let playPromise = vid.elt.play();
 
   if (playPromise !== undefined) {
-    playPromise
-      .then(() => {
-        vid.elt.muted = false;
-      })
-      .catch(() => {
-        vid.elt.muted = true;
-        vid.elt.play().catch(() => {
-          if (state === 0) switchState(1);
-        });
+    playPromise.catch(() => {
+      vid.elt.muted = true;
+      vid.elt.play().catch((err) => {
+        console.warn("Video play blocked until tap:", err);
       });
+    });
   }
 }
 
@@ -109,8 +113,9 @@ function draw() {
   switch (state) {
     case 0: // --- INTRO CUTSCENE ---
       background(0);
-      image(introVid, width / 2, height / 2, width, height);
-
+      if (introVid && introVid.elt.readyState >= 2) {
+        image(introVid, width / 2, height / 2, width, height);
+      }
       fill(255);
       textSize(20);
       text("Tap screen to start / skip", width / 2, height - 40);
@@ -122,7 +127,9 @@ function draw() {
 
     case 2: // --- WIN VIDEO ---
       background(0);
-      image(winVid, width / 2, height / 2, width, height);
+      if (winVid && winVid.elt.readyState >= 2) {
+        image(winVid, width / 2, height / 2, width, height);
+      }
       fill(255);
       textSize(20);
       text("Tap to play again", width / 2, height - 40);
@@ -130,7 +137,9 @@ function draw() {
 
     case 3: // --- LOSE VIDEO ---
       background(0);
-      image(loseVid, width / 2, height / 2, width, height);
+      if (loseVid && loseVid.elt.readyState >= 2) {
+        image(loseVid, width / 2, height / 2, width, height);
+      }
       fill(255);
       textSize(20);
       text("Tap to try again", width / 2, height - 40);
@@ -149,7 +158,10 @@ function playGame() {
   if (motionEnabled && (tiltgamma !== 0 || tiltbeta !== 0)) {
     xPosition = constrain(map(tiltgamma, -18, 18, 0, width), 0, width);
     yPosition = constrain(map(tiltbeta, 25, 45, 0, height), 0, height);
-  } else if (mouseIsPressed || touches.length > 0) {
+  } else if (touches.length > 0) {
+    xPosition = constrain(touches[0].x, 0, width);
+    yPosition = constrain(touches[0].y, 0, height);
+  } else if (mouseIsPressed) {
     xPosition = constrain(mouseX, 0, width);
     yPosition = constrain(mouseY, 0, height);
   }
@@ -208,23 +220,32 @@ function switchState(newState) {
 function handleScreenTap() {
   if (millis() - lastTapTime < 300) return;
   lastTapTime = millis();
+  userInteracted = true;
 
-  if (
-    !motionEnabled &&
-    typeof DeviceOrientationEvent !== "undefined" &&
-    typeof DeviceOrientationEvent.requestPermission === "function"
-  ) {
-    DeviceOrientationEvent.requestPermission()
-      .then((response) => {
-        if (response === "granted") {
-          startMotionListeners();
-        }
-      })
-      .catch(console.error);
+  // Unlock iOS orientation & motion sensors on tap
+  if (!motionEnabled) {
+    if (
+      typeof DeviceOrientationEvent !== "undefined" &&
+      typeof DeviceOrientationEvent.requestPermission === "function"
+    ) {
+      DeviceOrientationEvent.requestPermission()
+        .then((response) => {
+          if (response === "granted") {
+            startMotionListeners();
+          }
+        })
+        .catch(console.error);
+    }
+    if (
+      typeof DeviceMotionEvent !== "undefined" &&
+      typeof DeviceMotionEvent.requestPermission === "function"
+    ) {
+      DeviceMotionEvent.requestPermission().catch(console.error);
+    }
   }
 
   if (state === 0) {
-    if (introVid.elt.paused) {
+    if (introVid && introVid.elt.paused) {
       safePlay(introVid);
     } else {
       switchState(1);
@@ -314,5 +335,6 @@ class Car {
     this.pos.add(direction);
   }
 }
+
 
 
