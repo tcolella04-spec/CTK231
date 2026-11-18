@@ -1,23 +1,37 @@
-var beta = 35, gamma = 0;
-let xPosition = 0, yPosition = 0;
-
+var beta, gamma;
+var x = 0;
+var y = 0;
+var z = 0;
+var xPosition = 0;
+var yPosition = 0;
 let introVid, winVid, loseVid;
+let frogImage, flyImage;
 let blades = [];
 let mowerPos;
 let chaser;
-
 let state = 0;
 let permissionGranted = false;
 let survivalGoal = 15;
 let startTime = 0;
+var cars = [];
+var frogPos;
+
+function preload() {
+  // Load images safely before setup runs (uncomment if files exist in assets/)
+  // frogImage = loadImage("assets/frog.png");
+  // flyImage = loadImage("assets/fly.png");
+}
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
-  mowerPos = createVector(width / 2, height - 80);
 
+  // Initialize player position
+  mowerPos = createVector(width / 2, height / 2);
+
+  // Load videos (.mp4 for best mobile compatibility) and configure inline playback
   introVid = createVideo("intro.mp4");
   introVid.attribute("playsinline", "");
-  introVid.volume(0); 
+  introVid.volume(0);
   introVid.loop();
   introVid.hide();
 
@@ -31,8 +45,8 @@ function setup() {
 
   resetRound();
 
-  rectMode(CENTER);
   imageMode(CENTER);
+  rectMode(CENTER);
   noStroke();
 
   if (typeof DeviceOrientationEvent !== "undefined" && typeof DeviceOrientationEvent.requestPermission === "function") {
@@ -47,7 +61,7 @@ function draw() {
   background(0);
 
   switch (state) {
-    case 0:
+    case 0: // INTRO SCREEN
       image(introVid, width / 2, height / 2, width, height);
 
       fill(0, 160);
@@ -58,40 +72,56 @@ function draw() {
       text("Survive for " + survivalGoal + "s! Tap to start", width / 2, height - 80);
       break;
 
-    case 1:
+    case 1: // MAIN GAMEPLAY (DODGE & OUTRUN)
       background(55, 140, 65);
 
+      // Calculate remaining time
       let elapsedSeconds = (millis() - startTime) / 1000;
       let timeLeft = max(0, survivalGoal - elapsedSeconds);
 
+      // Map tilt data to screen coordinates (with desktop arrow-key fallback)
       handleDesktopFallback();
       xPosition = map(gamma, -18, 18, 0, width, true);
       yPosition = map(beta, 25, 45, 0, height, true);
 
-      fill(40, 140, 255);
-      ellipse(xPosition, yPosition, 70, 70);
-      mowerPos.set(xPosition, yPosition);
+      // Move and draw Player using push/pop transform
+      push();
+      translate(xPosition, yPosition);
+      if (frogImage) {
+        image(frogImage, 0, 0, 80, 80);
+      } else {
+        fill(40, 140, 255);
+        ellipse(0, 0, 70, 70);
+      }
+      pop();
 
+      // Update player vector for collision checks
+      mowerPos.x = xPosition;
+      mowerPos.y = yPosition;
+
+      // Update and check Enemy Chaser
       chaser.chase(mowerPos);
       chaser.display();
 
-      if (chaser.pos.dist(mowerPos) < 50) {
+      if (chaser.pos.dist(mowerPos) < 70) {
         state = 3;
         loseVid.play();
         break;
       }
-      
+
+      // Update blades/hazards and check collision
       for (let i = 0; i < blades.length; i++) {
         blades[i].display();
         blades[i].drive();
 
-        if (blades[i].pos.dist(mowerPos) < 50) {
+        if (blades[i].pos.dist(mowerPos) < 55) {
           state = 3;
           loseVid.play();
           break;
         }
       }
 
+      // Display countdown timer
       fill(0, 150);
       rect(width / 2, 40, 220, 50, 10);
       fill(255);
@@ -99,13 +129,14 @@ function draw() {
       textSize(24);
       text("Survive: " + ceil(timeLeft) + "s", width / 2, 40);
 
+      // Play win video if player survives the full duration
       if (timeLeft <= 0 && state === 1) {
         state = 2;
         winVid.play();
       }
       break;
 
-    case 2:
+    case 2: // SURVIVED LONG ENOUGH (WIN VIDEO)
       image(winVid, width / 2, height / 2, width, height);
 
       fill(0, 150);
@@ -116,7 +147,7 @@ function draw() {
       text("You Survived! Tap to play again", width / 2, height - 60);
       break;
 
-    case 3:
+    case 3: // CAUGHT OR HIT (LOSE VIDEO)
       image(loseVid, width / 2, height / 2, width, height);
 
       fill(0, 150);
@@ -130,7 +161,8 @@ function draw() {
 }
 
 function touchStarted() {
-  if (!permissionGranted && typeof DeviceOrientationEvent.requestPermission === "function") {
+  // Request iOS motion permission (orientation + accelerometer)
+  if (!permissionGranted && typeof DeviceOrientationEvent !== "undefined" && typeof DeviceOrientationEvent.requestPermission === "function") {
     DeviceOrientationEvent.requestPermission()
       .then((response) => {
         if (response === "granted") {
@@ -147,6 +179,7 @@ function touchStarted() {
     winVid.stop();
     loseVid.stop();
 
+    // Unlock win/lose videos on iOS Safari via direct user gesture
     winVid.play();
     winVid.pause();
     winVid.time(0);
@@ -160,17 +193,17 @@ function touchStarted() {
     state = 1;
   }
 
-  return false; 
+  return false; // Prevents mobile scrolling/zooming and double-tap events
 }
 
 function windowResized() {
-  resizeCanvas(windowWidth,windowHeight);
+  resizeCanvas(windowWidth, windowHeight);
 }
 
 function resetRound() {
   beta = 35;
   gamma = 0;
-  mowerPos.set(width / 2, height - 80);
+  mowerPos.set(width / 2, height / 2);
 
   blades = [];
   for (let i = 0; i < 15; i++) {
@@ -180,10 +213,20 @@ function resetRound() {
 }
 
 function startMotionListeners() {
+  // Gyroscope orientation data
   window.addEventListener("deviceorientation", (e) => {
     alpha = e.alpha || 0;
     beta = e.beta || 35;
     gamma = e.gamma || 0;
+  });
+
+  // Accelerometer data (x, y, z)
+  window.addEventListener("devicemotion", (e) => {
+    if (e.accelerationIncludingGravity) {
+      x = e.accelerationIncludingGravity.x || 0;
+      y = e.accelerationIncludingGravity.y || 0;
+      z = e.accelerationIncludingGravity.z || 0;
+    }
   });
 }
 
@@ -215,15 +258,19 @@ class Enemy {
 class Blade {
   constructor() {
     do {
-      this.pos = createVector(random(width), random(height * 0.6));
+      this.pos = createVector(random(width), random(height));
     } while (this.pos.dist(mowerPos) < 180);
 
     this.vel = createVector(random(-5, 5), random(-5, 5));
   }
 
   display() {
-    fill(245, 210, 40);
-    rect(this.pos.x, this.pos.y, 50, 50, 8);
+    if (flyImage) {
+      image(flyImage, this.pos.x, this.pos.y, 50, 50);
+    } else {
+      fill(245, 210, 40);
+      rect(this.pos.x, this.pos.y, 50, 50, 8);
+    }
   }
 
   drive() {
@@ -234,4 +281,3 @@ class Blade {
     if (this.pos.y < 0) this.pos.y = height;
   }
 }
-
