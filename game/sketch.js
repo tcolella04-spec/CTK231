@@ -10,14 +10,18 @@ var frogPos;
 
 // Game State & Timer
 let state = 0; // 0 = Intro Cutscene, 1 = Playing, 2 = Win, 3 = Lose
-let timer = 15; // 15 seconds to cut all grass
+let roundDuration = 15; // Survive 15 seconds to win
+let timer = roundDuration;
+let gameStartTime = 0;
+
 let motionEnabled = false;
 let lastTapTime = 0;
+let numEnemies = 5; // Number of chasing blades
 
 async function setup() {
   createCanvas(windowWidth, windowHeight);
 
-  frogPos = createVector(width / 2, height - 80);
+  frogPos = createVector(width / 2, height / 2);
 
   // Load Images
   flyImage = await loadImage("blade.png");
@@ -25,20 +29,19 @@ async function setup() {
   bgImage = await loadImage("grass.jpeg");
 
   // Load Videos (Tries .mp4 first, falls back to .mov automatically)
-  introVid = createVideo(["cutscene.mov"], () => {
+  introVid = createVideo(["cutscene1.mp4", "cutscene1.mov"], () => {
     setupMobileVideo(introVid);
   });
   introVid.onended(() => switchState(1));
 
-  winVid = createVideo(["win.mov"], () => {
+  winVid = createVideo(["win1.mp4", "win1.mov"], () => {
     setupMobileVideo(winVid);
   });
 
-  loseVid = createVideo(["lose.mov"], () => {
+  loseVid = createVideo(["lose1.mp4", "lose1.mov"], () => {
     setupMobileVideo(loseVid);
   });
 
-  // Apply mobile attributes & hide default HTML video players immediately
   setupMobileVideo(introVid);
   setupMobileVideo(winVid);
   setupMobileVideo(loseVid);
@@ -68,14 +71,12 @@ function setupMobileVideo(vid) {
 function safePlay(vid) {
   if (!vid || !vid.elt) return;
 
-  // If the video file failed to load or codec isn't supported, skip gracefully
   if (vid.elt.error) {
     console.warn("Video file error (check filename/codec):", vid.elt.error);
     if (state === 0) switchState(1);
     return;
   }
 
-  // Only reset timestamp if video metadata has loaded
   if (vid.elt.readyState >= 1) {
     vid.elt.currentTime = 0;
   }
@@ -88,7 +89,6 @@ function safePlay(vid) {
         vid.elt.muted = false;
       })
       .catch(() => {
-        // Fallback to muted playback if browser blocks audio
         vid.elt.muted = true;
         vid.elt.play().catch(() => {
           if (state === 0) switchState(1);
@@ -162,28 +162,29 @@ function playGame() {
   frogPos.x = xPosition;
   frogPos.y = yPosition;
 
-  // Loop backwards when splicing so items aren't skipped
-  for (var i = cars.length - 1; i >= 0; i--) {
+  // Update and draw chasing blades
+  for (var i = 0; i < cars.length; i++) {
     cars[i].display();
-    cars[i].drive();
-    if (cars[i].pos.dist(frogPos) < 50) {
-      cars.splice(i, 1);
+    cars[i].chase(frogPos);
+
+    // Touching a blade triggers Lose video (state 3)
+    if (cars[i].pos.dist(frogPos) < 55) {
+      switchState(3);
+      return;
     }
   }
 
-  // Countdown Timer UI
-  if (frameCount % 60 === 0 && timer > 0) {
-    timer--;
-  }
-  fill(255);
-  textSize(24);
-  text("Time: " + timer + " | Blades left: " + cars.length, width / 2, 40);
+  // Accurate real-time countdown in seconds
+  let elapsed = floor((millis() - gameStartTime) / 1000);
+  timer = max(0, roundDuration - elapsed);
 
-  // Check Win / Lose Conditions
-  if (cars.length === 0) {
-    switchState(2); // Win!
-  } else if (timer <= 0) {
-    switchState(3); // Lose!
+  fill(255);
+  textSize(28);
+  text("Survive: " + timer + "s", width / 2, 40);
+
+  // Timer reaches 0 -> Win video (state 2)
+  if (timer === 0) {
+    switchState(2);
   }
 }
 
@@ -205,11 +206,9 @@ function switchState(newState) {
 }
 
 function handleScreenTap() {
-  // Prevent touchStarted + mousePressed from firing twice on a single tap
   if (millis() - lastTapTime < 300) return;
   lastTapTime = millis();
 
-  // Request iOS 13+ motion permissions on user gesture
   if (
     !motionEnabled &&
     typeof DeviceOrientationEvent !== "undefined" &&
@@ -237,7 +236,7 @@ function handleScreenTap() {
 
 function touchStarted() {
   handleScreenTap();
-  return false; // Prevents mobile browser scrolling and pull-to-refresh
+  return false;
 }
 
 function mousePressed() {
@@ -245,11 +244,14 @@ function mousePressed() {
 }
 
 function resetGame() {
-  timer = 15;
+  timer = roundDuration;
+  gameStartTime = millis();
   xPosition = width / 2;
   yPosition = height / 2;
+  frogPos.set(xPosition, yPosition);
+
   cars = [];
-  for (var i = 0; i < 40; i++) {
+  for (var i = 0; i < numEnemies; i++) {
     cars.push(new Car());
   }
 }
@@ -285,20 +287,32 @@ function startMotionListeners() {
 
 class Car {
   constructor() {
-    this.pos = createVector(random(width), random(height));
-    this.vel = createVector(random(-5, 5), random(-5, 5));
+    // Spawn along the outer edges so enemies don't immediately hit the player in the center
+    if (random(1) < 0.5) {
+      this.pos = createVector(random(width), random(1) < 0.5 ? 0 : height);
+    } else {
+      this.pos = createVector(random(1) < 0.5 ? 0 : width, random(height));
+    }
+
+    // Give each chaser a slightly different speed so they don't stack into a single blob
+    this.speed = random(2, 4.5);
   }
 
   display() {
-    image(flyImage, this.pos.x, this.pos.y, 100, 100);
+    push();
+    translate(this.pos.x, this.pos.y);
+    rotate(frameCount * 0.15);
+    image(flyImage, 0, 0, 90, 90);
+    pop();
   }
 
-  drive() {
-    this.pos.add(this.vel);
-    if (this.pos.x > width) this.pos.x = 0;
-    if (this.pos.x < 0) this.pos.x = width;
-    if (this.pos.y > height) this.pos.y = 0;
-    if (this.pos.y < 0) this.pos.y = height;
+  chase(target) {
+    let direction = p5.Vector.sub(target, this.pos);
+    direction.normalize();
+    direction.mult(this.speed);
+
+    this.pos.add(direction);
   }
 }
+
 
