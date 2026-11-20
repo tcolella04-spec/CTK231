@@ -31,17 +31,17 @@ async function setup() {
   Static = await loadImage("static.gif");
 
   // Load Videos (Tries .mp4 first, falls back to .mov automatically)
-  introVid = createVideo(["cutscene1.mp4", "cutscene1.mov"], () => {
+  introVid = createVideo(["cutscene.mp4", "cutscene.mov"], () => {
     setupMobileVideo(introVid);
     if (state === 1) safePlay(introVid);
   });
   introVid.onended(() => switchState(2));
 
-  winVid = createVideo(["win1.mp4", "win1.mov"], () => {
+  winVid = createVideo(["win.mp4", "win.mov"], () => {
     setupMobileVideo(winVid);
   });
 
-  loseVid = createVideo(["lose1.mp4", "lose1.mov"], () => {
+  loseVid = createVideo(["lose.mp4", "lose.mov"], () => {
     setupMobileVideo(loseVid);
   });
 
