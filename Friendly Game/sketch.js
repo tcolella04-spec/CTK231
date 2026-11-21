@@ -37,7 +37,6 @@ async function setup() {
   player = await loadImage("sprite2.png");
   Static = await loadImage("static.gif");
 
-  // Load Videos (Tries .mp4 first, falls back to .mov automatically)
   introVid = createVideo(["cutscene.mp4", "cutscene.mov"], () => {
     setupMobileVideo(introVid);
     if (state === 1) safePlay(introVid);
@@ -56,7 +55,7 @@ async function setup() {
   setupMobileVideo(winVid);
   setupMobileVideo(loseVid);
 
-  // Start listeners immediately on Android / non-iOS devices
+  
   if (
     typeof DeviceOrientationEvent === "undefined" ||
     typeof DeviceOrientationEvent.requestPermission !== "function"
@@ -357,7 +356,6 @@ function touchMoved() {
 
 function touchEnded() {
   requestGyroPermission();
-  return false;
 }
 
 function mousePressed() {
