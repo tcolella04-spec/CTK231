@@ -2,7 +2,14 @@ var tiltbeta = 0, tiltgamma = 0, tiltalpha = 0;
 var accelX = 0, accelY = 0, accelZ = 0;
 var xPosition = 0, yPosition = 0;
 
-let flyImage, frogImage, bgImage, Player, Static;
+// Gyro calibration & smoothing variables
+let baseBeta = null;
+let baseGamma = null;
+let targetX = 0;
+let targetY = 0;
+let sensorActive = false;
+
+let flyImage, frogImage, bgImage, player, Static;
 let introVid, winVid, loseVid;
 
 var cars = [];
@@ -49,6 +56,7 @@ async function setup() {
   setupMobileVideo(winVid);
   setupMobileVideo(loseVid);
 
+  // Start listeners immediately on Android / non-iOS devices
   if (
     typeof DeviceOrientationEvent === "undefined" ||
     typeof DeviceOrientationEvent.requestPermission !== "function"
@@ -168,7 +176,6 @@ function draw() {
 function drawTitleScreen() {
   if (bgImage) {
     drawMediaCover(bgImage, bgImage.width, bgImage.height);
-    
     fill(0, 120);
     rect(width / 2, height / 2, width, height);
   } else {
@@ -200,16 +207,48 @@ function playGame() {
     drawMediaCover(Static, Static.width, Static.height);
     pop();
   }
+
+  // 1. Touch / Mouse fallback (only overrides if actively pressing)
   if (touches.length > 0) {
-    xPosition = constrain(touches[0].x, 0, width);
-    yPosition = constrain(touches[0].y, 0, height);
+    targetX = constrain(touches[0].x, 0, width);
+    targetY = constrain(touches[0].y - 40, 0, height);
   } else if (mouseIsPressed) {
-    xPosition = constrain(mouseX, 0, width);
-    yPosition = constrain(mouseY, 0, height);
-  } else if (motionEnabled && (tiltgamma !== 0 || tiltbeta !== 0)) {
-    xPosition = constrain(map(tiltgamma, -18, 18, 0, width), 0, width);
-    yPosition = constrain(map(tiltbeta, 25, 45, 0, height), 0, height);
+    targetX = constrain(mouseX, 0, width);
+    targetY = constrain(mouseY, 0, height);
+  } else if (sensorActive) {
+    // 2. Calibrated Gyro Controls
+    if (baseBeta === null || baseGamma === null) {
+      baseBeta = tiltbeta;
+      baseGamma = tiltgamma;
+    }
+
+    let deltaX = tiltgamma - baseGamma;
+    let deltaY = tiltbeta - baseBeta;
+
+    // Handle landscape vs portrait axis swap
+    let angle = (window.screen && window.screen.orientation)
+      ? window.screen.orientation.angle
+      : (window.orientation || 0);
+
+    if (angle === 90) {
+      let temp = deltaX;
+      deltaX = deltaY;
+      deltaY = -temp;
+    } else if (angle === -90 || angle === 270) {
+      let temp = deltaX;
+      deltaX = -deltaY;
+      deltaY = temp;
+    }
+
+    // +/- 20 degrees of tilt reaches the edges of the screen
+    let sensitivity = 20;
+    targetX = constrain(map(deltaX, -sensitivity, sensitivity, 0, width), 0, width);
+    targetY = constrain(map(deltaY, -sensitivity, sensitivity, 0, height), 0, height);
   }
+
+  // Smooth movement to eliminate sensor jitter
+  xPosition = lerp(xPosition, targetX, 0.25);
+  yPosition = lerp(yPosition, targetY, 0.25);
 
   push();
   translate(xPosition, yPosition);
@@ -264,32 +303,36 @@ function switchState(newState) {
   }
 }
 
+function requestGyroPermission() {
+  if (
+    typeof DeviceOrientationEvent !== "undefined" &&
+    typeof DeviceOrientationEvent.requestPermission === "function"
+  ) {
+    DeviceOrientationEvent.requestPermission()
+      .then((response) => {
+        if (response === "granted") {
+          startMotionListeners();
+        }
+      })
+      .catch(console.error);
+  } else {
+    startMotionListeners();
+  }
+
+  if (
+    typeof DeviceMotionEvent !== "undefined" &&
+    typeof DeviceMotionEvent.requestPermission === "function"
+  ) {
+    DeviceMotionEvent.requestPermission().catch(console.error);
+  }
+}
+
 function handleScreenTap() {
   if (millis() - lastTapTime < 300) return;
   lastTapTime = millis();
   userInteracted = true;
 
-  // Unlock iOS orientation & motion sensors on tap
-  if (!motionEnabled) {
-    if (
-      typeof DeviceOrientationEvent !== "undefined" &&
-      typeof DeviceOrientationEvent.requestPermission === "function"
-    ) {
-      DeviceOrientationEvent.requestPermission()
-        .then((response) => {
-          if (response === "granted") {
-            startMotionListeners();
-          }
-        })
-        .catch(console.error);
-    }
-    if (
-      typeof DeviceMotionEvent !== "undefined" &&
-      typeof DeviceMotionEvent.requestPermission === "function"
-    ) {
-      DeviceMotionEvent.requestPermission().catch(console.error);
-    }
-  }
+  requestGyroPermission();
 
   if (state === 0) {
     // Title screen -> Start Intro Cutscene (with sound unlocked!)
@@ -308,6 +351,15 @@ function touchStarted() {
   return false;
 }
 
+function touchMoved() {
+  return false;
+}
+
+function touchEnded() {
+  requestGyroPermission();
+  return false;
+}
+
 function mousePressed() {
   if (touches.length > 0) return;
   handleScreenTap();
@@ -318,7 +370,13 @@ function resetGame() {
   gameStartTime = millis();
   xPosition = width / 2;
   yPosition = height / 2;
+  targetX = xPosition;
+  targetY = yPosition;
   frogPos.set(xPosition, yPosition);
+
+  // Recalibrate neutral tilt angle at the start of every round
+  baseBeta = null;
+  baseGamma = null;
 
   cars = [];
   for (var i = 0; i < numEnemies; i++) {
@@ -341,10 +399,13 @@ function startMotionListeners() {
   motionEnabled = true;
 
   window.addEventListener("deviceorientation", (e) => {
-    if (e.alpha !== null) tiltalpha = e.alpha;
-    if (e.beta !== null) tiltbeta = e.beta;
-    if (e.gamma !== null) tiltgamma = e.gamma;
-  });
+    if (e.beta !== null && e.gamma !== null) {
+      tiltalpha = e.alpha || 0;
+      tiltbeta = e.beta;
+      tiltgamma = e.gamma;
+      sensorActive = true;
+    }
+  }, true);
 
   window.addEventListener("devicemotion", (e) => {
     if (e.acceleration) {
@@ -352,38 +413,12 @@ function startMotionListeners() {
       accelY = e.acceleration.y || 0;
       accelZ = e.acceleration.z || 0;
     }
-  });
+  }, true);
 }
 
 class Car {
   constructor(isFlipped = false) {
-    this.isFlipped = isFlipped
-    if (random(1) < 0.5) {
-      this.pos = createVector(random(width), random(1) < 0.5 ? 0 : height);
-    } else {
-      this.pos = createVector(random(1) < 0.5 ? 0 : width, random(height));
-    }
-    this.speed = random(2, 4.5);
-  }
+    this.isFlipped = isFlipped;
 
-  display() {
-    push();
-    translate(this.pos.x, this.pos.y);
-    if (this.isFlipped) {
-      scale(-1,1);
-    }
-    if (flyImage) {
-      image(flyImage, 0, 0, 90, 90);
-    }
-    pop();
-  }
-
-  chase(target) {
-    let direction = p5.Vector.sub(target, this.pos);
-    direction.normalize();
-    direction.mult(this.speed);
-    this.pos.add(direction);
-  }
-}
 
 
