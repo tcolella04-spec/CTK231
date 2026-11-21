@@ -415,10 +415,39 @@ function startMotionListeners() {
     }
   }, true);
 }
-
 class Car {
   constructor(isFlipped = false) {
-    this.isFlipped = isFlipped;
+    this.isFlipped = isFlipped
+    if (random(1) < 0.5) {
+      this.pos = createVector(random(width), random(1) < 0.5 ? 0 : height);
+    } else {
+      this.pos = createVector(random(1) < 0.5 ? 0 : width, random(height));
+    }
+    this.speed = random(2, 4.5);
+  }
+
+  display() {
+    push();
+    translate(this.pos.x, this.pos.y);
+    if (this.isFlipped) {
+      scale(-1,1);
+    }
+    if (flyImage) {
+      image(flyImage, 0, 0, 90, 90);
+    }
+    pop();
+  }
+
+  chase(target) {
+    let direction = p5.Vector.sub(target, this.pos);
+    direction.normalize();
+    direction.mult(this.speed);
+    this.pos.add(direction);
+  }
+}
+
+
+
 
 
 
